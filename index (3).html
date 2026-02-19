@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramadan 2026 Companion - Umair Shehzad</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .arabic-text { font-family: 'Amiri', serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Smooth transitions for UI elements */
+        .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Custom styling for settings to prevent congestion */
+        .settings-card select, .settings-card button {
+            letter-spacing: -0.01em;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        /**
+         * UPDATED BASE DATA: Standardized for Islamabad (Baseline)
+         * Based on Feb 18 Start (Day 1)
+         */
+        const BASE_DATA = [
+            { day: 1, date: "Feb 18", sehri: "05:25", iftar: "18:01" },
+            { day: 2, date: "Feb 19", sehri: "05:24", iftar: "18:02" },
+            { day: 3, date: "Feb 20", sehri: "05:23", iftar: "18:03" },
+            { day: 4, date: "Feb 21", sehri: "05:22", iftar: "18:04" },
+            { day: 5, date: "Feb 22", sehri: "05:21", iftar: "18:04" },
+            { day: 6, date: "Feb 23", sehri: "05:20", iftar: "18:05" },
+            { day: 7, date: "Feb 24", sehri: "05:19", iftar: "18:06" },
+            { day: 8, date: "Feb 25", sehri: "05:18", iftar: "18:07" },
+            { day: 9, date: "Feb 26", sehri: "05:17", iftar: "18:08" },
+            { day: 10, date: "Feb 27", sehri: "05:16", iftar: "18:09" },
+            { day: 11, date: "Feb 28", sehri: "05:15", iftar: "18:10" },
+            { day: 12, date: "Mar 01", sehri: "05:13", iftar: "18:11" },
+            { day: 13, date: "Mar 02", sehri: "05:12", iftar: "18:12" },
+            { day: 14, date: "Mar 03", sehri: "05:11", iftar: "18:12" },
+            { day: 15, date: "Mar 04", sehri: "05:10", iftar: "18:13" },
+            { day: 16, date: "Mar 05", sehri: "05:08", iftar: "18:14" },
+            { day: 17, date: "Mar 06", sehri: "05:07", iftar: "18:15" },
+            { day: 18, date: "Mar 07", sehri: "05:06", iftar: "18:16" },
+            { day: 19, date: "Mar 08", sehri: "05:04", iftar: "18:17" },
+            { day: 20, date: "Mar 09", sehri: "05:03", iftar: "18:17" },
+            { day: 21, date: "Mar 10", sehri: "05:02", iftar: "18:18" },
+            { day: 22, date: "Mar 11", sehri: "05:00", iftar: "18:19" },
+            { day: 23, date: "Mar 12", sehri: "04:59", iftar: "18:20" },
+            { day: 24, date: "Mar 13", sehri: "04:57", iftar: "18:21" },
+            { day: 25, date: "Mar 14", sehri: "04:56", iftar: "18:21" },
+            { day: 26, date: "Mar 15", sehri: "04:54", iftar: "18:22" },
+            { day: 27, date: "Mar 16", sehri: "04:53", iftar: "18:23" },
+            { day: 28, date: "Mar 17", sehri: "04:51", iftar: "18:24" },
+            { day: 29, date: "Mar 18", sehri: "04:50", iftar: "18:25" },
+            { day: 30, date: "Mar 19", sehri: "04:48", iftar: "18:25" },
+        ];
+
+        // Prayer timing offsets relative to Islamabad baseline
+        const CITY_PRESETS = {
+            "Pakistan": [
+                { name: "Islamabad", sehriOffset: 0, iftarOffset: 0, prayerOffsets: { fajr: "05:35", dhuhr: "12:15", asr: "15:30", maghrib: "18:01", isha: "19:25" } },
+                { name: "Lahore", sehriOffset: -10, iftarOffset: -10, prayerOffsets: { fajr: "05:25", dhuhr: "12:05", asr: "15:20", maghrib: "17:51", isha: "19:15" } },
+                { name: "Karachi", sehriOffset: 25, iftarOffset: 33, prayerOffsets: { fajr: "06:00", dhuhr: "12:45", asr: "16:05", maghrib: "18:34", isha: "19:55" } },
+                { name: "Peshawar", sehriOffset: 6, iftarOffset: 8, prayerOffsets: { fajr: "05:41", dhuhr: "12:23", asr: "15:38", maghrib: "18:09", isha: "19:33" } },
+            ],
+            "Saudi Arabia": [
+                { name: "Riyadh", sehriOffset: -19, iftarOffset: -11, prayerOffsets: { fajr: "05:06", dhuhr: "12:04", asr: "15:22", maghrib: "17:50", isha: "19:10" } },
+                { name: "Makkah", sehriOffset: 12, iftarOffset: 25, prayerOffsets: { fajr: "05:37", dhuhr: "12:35", asr: "15:53", maghrib: "18:26", isha: "19:56" } },
+                { name: "Madinah", sehriOffset: 10, iftarOffset: 22, prayerOffsets: { fajr: "05:35", dhuhr: "12:32", asr: "15:50", maghrib: "18:23", isha: "19:53" } },
+            ],
+            "Turkey": [
+                { name: "Istanbul", sehriOffset: 58, iftarOffset: 41, prayerOffsets: { fajr: "06:23", dhuhr: "13:20", asr: "16:11", maghrib: "18:42", isha: "20:05" } },
+                { name: "Ankara", sehriOffset: 45, iftarOffset: 28, prayerOffsets: { fajr: "06:10", dhuhr: "13:05", asr: "15:58", maghrib: "18:29", isha: "19:50" } },
+            ],
+            "UAE": [
+                { name: "Dubai", sehriOffset: -10, iftarOffset: 12, prayerOffsets: { fajr: "05:15", dhuhr: "12:27", asr: "15:45", maghrib: "18:13", isha: "19:33" } },
+                { name: "Abu Dhabi", sehriOffset: -6, iftarOffset: 16, prayerOffsets: { fajr: "05:19", dhuhr: "12:31", asr: "15:49", maghrib: "18:17", isha: "19:37" } },
+            ]
+        };
+
+        const DUAS = [
+            { title: "Sehri Dua", arabic: "وَبِصَوْمِ غَدٍ نَّوَيْتُ مِنْ شَهْرِ رَمَضَانَ", translation: "I intend to keep the fast for tomorrow in the month of Ramadan." },
+            { title: "Iftar Dua", arabic: "اللَّهُمَّ اِنِّى لَكَ صُمْتُ وَبِكَ امنْتُ وَعَلَيْكَ تَوَكَّلْتُ وَعَلَى رِزْقِكَ اَفْطَرْتُ", translation: "O Allah! I fasted for You and I believe in You and I break my fast with Your sustenance." },
+            { title: "1st Ashra (Mercy)", arabic: "رَبِّ اغْفِرْ وَارْحَمْ وَأَنْتَ خَيْرُ الرَّاحِمِينَ", translation: "My Lord! Forgive and have mercy, for You are the best of those who show mercy." },
+            { title: "2nd Ashra (Forgiveness)", arabic: "اَسْتَغْفِرُ اللهَ رَبِّی مِنْ کُلِّ ذَنْبٍ وَّ اَتُوْبُ اِلَیْہِ", translation: "I seek forgiveness from Allah, my Lord, for every sin and I turn to Him in repentance." },
+            { title: "3rd Ashra (Protection)", arabic: "اَللَّهُمَّ أَجِرْنِي مِنَ النَّارِ", translation: "O Allah, save me from the fire (of Hell)." },
+            { title: "Laylatul Qadr", arabic: "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي", translation: "O Allah, You are Most Forgiving and You love forgiveness, so forgive me." }
+        ];
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+            const [currentTime, setCurrentTime] = useState(new Date());
+            const [tasbeehCount, setTasbeehCount] = useState(0);
+            const [showSettings, setShowSettings] = useState(false);
+            const [dateOffset, setDateOffset] = useState(0); 
+            const [selectedCountry, setSelectedCountry] = useState("Pakistan");
+            const [selectedCity, setSelectedCity] = useState(CITY_PRESETS["Pakistan"][0]);
+            const creatorName = "Umair Shehzad";
+
+            const adjustTime = (timeStr, minutes) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                let date = new Date();
+                date.setHours(h, m + minutes, 0);
+                return date.toTimeString().slice(0, 5);
+            };
+
+            const ramadanData = useMemo(() => {
+                return BASE_DATA.map(item => {
+                    const dateObj = new Date(item.date + ", 2026");
+                    dateObj.setDate(dateObj.getDate() + dateOffset);
+                    const newDateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+                    const newSehri = adjustTime(item.sehri, selectedCity.sehriOffset);
+                    const newIftar = adjustTime(item.iftar, selectedCity.iftarOffset);
+                    return { ...item, date: newDateStr, sehri: newSehri, iftar: newIftar };
+                });
+            }, [dateOffset, selectedCity]);
+
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                if (window.lucide) window.lucide.createIcons();
+                return () => clearInterval(timer);
+            }, [activeTab, selectedCity, showSettings]);
+
+            const countdown = useMemo(() => {
+                const todayData = ramadanData[0];
+                const now = currentTime;
+                
+                const parseToDate = (timeStr) => {
+                    const [h, m] = timeStr.split(':').map(Number);
+                    const d = new Date(now);
+                    d.setHours(h, m, 0, 0);
+                    return d;
+                };
+
+                const sehriDate = parseToDate(todayData.sehri);
+                const iftarDate = parseToDate(todayData.iftar);
+                
+                let target, label;
+
+                if (now < sehriDate) {
+                    target = sehriDate;
+                    label = "Time until Sehri";
+                } else if (now < iftarDate) {
+                    target = iftarDate;
+                    label = "Time until Iftar";
+                } else {
+                    const tomorrowSehri = parseToDate(ramadanData[1]?.sehri || "05:25");
+                    tomorrowSehri.setDate(tomorrowSehri.getDate() + 1);
+                    target = tomorrowSehri;
+                    label = "Time until Sehri";
+                }
+
+                const diff = Math.max(0, target - now);
+                const h = Math.floor(diff / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                return {
+                    hours: h.toString().padStart(2, '0'),
+                    minutes: m.toString().padStart(2, '0'),
+                    label: label
+                };
+            }, [currentTime, ramadanData]);
+
+            const NavButton = ({ active, icon, label, onClick }) => (
+                <button onClick={onClick} className={`flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-all ${active ? 'text-white bg-emerald-600 scale-105 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+                    <i data-lucide={icon} style={{width: 20, height: 20}}></i>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">{label}</span>
+                </button>
+            );
+
+            return (
+                <div className="min-h-screen bg-slate-100 text-slate-900 flex justify-center items-center p-0 sm:p-4">
+                    <div className="w-full max-w-md min-h-screen sm:min-h-[850px] sm:rounded-[3rem] bg-white shadow-2xl flex flex-col relative overflow-hidden">
+                        
+                        <header className="px-6 py-5 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-40">
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg rotate-3 hover:rotate-0 transition-all">
+                                    <i data-lucide="moon" fill="currentColor"></i>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-800 text-lg tracking-tight leading-none mb-1">{selectedCity.name}</h3>
+                                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold uppercase tracking-widest">
+                                        <i data-lucide="map-pin" style={{width: 10, height: 10}}></i>
+                                        {selectedCountry}
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 transition-all">
+                                <i data-lucide="settings-2" style={{width: 20, height: 20}}></i>
+                            </button>
+                        </header>
+
+                        <main className="flex-1 px-6 pt-4 pb-28 overflow-y-auto no-scrollbar">
+                            {activeTab === 'home' && (
+                                <div className="space-y-6 animate-in fade-in duration-500">
+                                    <div className="bg-emerald-600 rounded-[2.5rem] p-7 text-white shadow-xl relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-all"><i data-lucide="star" style={{width: 100, height: 100}}></i></div>
+                                        <h2 className="text-3xl font-extrabold mb-1 tracking-tight">Ramadan Mubarak</h2>
+                                        <p className="text-emerald-100 text-sm font-medium mb-5 opacity-90 italic">"Wishing you a month of peace and prosperity."</p>
+                                        <div className="inline-flex items-center bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">
+                                            By {creatorName}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm text-center">
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">{countdown.label}</p>
+                                        <div className="flex justify-center items-center gap-4 mb-10">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-6xl font-black text-slate-800 tracking-tighter font-mono">{countdown.hours}</span>
+                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">Hours</span>
+                                            </div>
+                                            <span className="text-4xl font-black text-slate-200 -mt-6">:</span>
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-6xl font-black text-slate-800 tracking-tighter font-mono">{countdown.minutes}</span>
+                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">Mins</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-5 mb-8">
+                                            <div className="bg-emerald-50 p-5 rounded-[2rem] flex flex-col items-center gap-2 border border-emerald-100/50">
+                                                <div className="bg-emerald-100 p-2.5 rounded-xl text-emerald-700 shadow-sm"><i data-lucide="cloud-moon" style={{width:22}}></i></div>
+                                                <div>
+                                                    <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-widest mb-0.5">Sehri</p>
+                                                    <p className="text-2xl font-black text-slate-800 font-mono tracking-tight">{ramadanData[0].sehri}</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-orange-50 p-5 rounded-[2rem] flex flex-col items-center gap-2 border border-orange-100/50">
+                                                <div className="bg-orange-100 p-2.5 rounded-xl text-orange-700 shadow-sm"><i data-lucide="sunset" style={{width:22}}></i></div>
+                                                <div>
+                                                    <p className="text-[11px] text-orange-600 font-bold uppercase tracking-widest mb-0.5">Iftar</p>
+                                                    <p className="text-2xl font-black text-slate-800 font-mono tracking-tight">{ramadanData[0].iftar}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Prayer Timings</h4>
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {[
+                                                    { name: 'Fajr', time: selectedCity.prayerOffsets.fajr },
+                                                    { name: 'Dhuhr', time: selectedCity.prayerOffsets.dhuhr },
+                                                    { name: 'Asr', time: selectedCity.prayerOffsets.asr },
+                                                    { name: 'Maghrib', time: selectedCity.prayerOffsets.maghrib },
+                                                    { name: 'Isha', time: selectedCity.prayerOffsets.isha }
+                                                ].map(prayer => (
+                                                    <div key={prayer.name} className="flex flex-col items-center">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mb-1">{prayer.name}</span>
+                                                        <span className="text-[13px] font-black text-slate-700 font-mono">{prayer.time}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'duas' && (
+                                <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                                    <h2 className="text-2xl font-bold px-1 text-slate-800">Sacred Duas</h2>
+                                    {DUAS.map((dua, i) => (
+                                        <div key={i} className="bg-white p-7 rounded-3xl border border-slate-100 shadow-sm hover:border-emerald-200 transition-all">
+                                            <p className="text-emerald-600 font-bold text-[10px] uppercase mb-4 tracking-[0.15em]">{dua.title}</p>
+                                            <p className="arabic-text text-3xl text-right leading-[1.8] mb-5 text-slate-800 antialiased" dir="rtl">{dua.arabic}</p>
+                                            <div className="text-slate-500 text-[13px] leading-relaxed italic border-t pt-5 border-slate-50">
+                                                {dua.translation}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {activeTab === 'calendar' && (
+                                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
+                                    <table className="w-full">
+                                        <thead className="bg-slate-50/50">
+                                            <tr>
+                                                <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-widest">Ramadan / Date</th>
+                                                <th className="px-4 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">Sehri</th>
+                                                <th className="px-6 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">Iftar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {ramadanData.map(row => (
+                                                <tr key={row.day} className="hover:bg-emerald-50/30 transition-colors group">
+                                                    <td className="px-6 py-5">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-bold text-slate-800">Day {row.day}</span>
+                                                            <span className="text-[10px] font-medium text-slate-400 uppercase">{row.date}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-5 text-center text-emerald-600 font-bold font-mono text-base">{row.sehri}</td>
+                                                    <td className="px-6 py-5 text-center text-orange-600 font-bold font-mono text-base">{row.iftar}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {activeTab === 'tasbeeh' && (
+                                <div className="flex flex-col items-center justify-center py-10 space-y-12 animate-in zoom-in-95 duration-500">
+                                    <button 
+                                        onClick={() => setTasbeehCount(c => c + 1)}
+                                        className="w-64 h-64 bg-emerald-600 rounded-full shadow-[0_30px_60px_-15px_rgba(5,150,105,0.4)] flex flex-col items-center justify-center text-white border-[16px] border-emerald-50 active:scale-95 transition-all relative group"
+                                    >
+                                        <div className="absolute inset-0 bg-white/10 rounded-full scale-0 group-active:scale-100 transition-transform duration-200"></div>
+                                        <span className="text-[11px] font-bold uppercase tracking-[0.5em] mb-2 opacity-70">SubhanAllah</span>
+                                        <span className="text-8xl font-black font-mono tracking-tighter">{tasbeehCount}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] mt-4 opacity-50">Touch to Count</span>
+                                    </button>
+                                    <button onClick={() => setTasbeehCount(0)} className="flex items-center gap-2 px-10 py-4 bg-white rounded-2xl border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 font-bold text-xs uppercase tracking-widest shadow-sm transition-all">
+                                        <i data-lucide="rotate-ccw" style={{width:14}}></i>
+                                        Reset Progress
+                                    </button>
+                                </div>
+                            )}
+                        </main>
+
+                        <nav className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-[360px] bg-white/90 backdrop-blur-2xl rounded-[2.25rem] p-2.5 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.15)] border border-slate-100 flex justify-between items-center z-50">
+                            <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon="layout" label="Home" />
+                            <NavButton active={activeTab === 'duas'} onClick={() => setActiveTab('duas')} icon="book-open" label="Duas" />
+                            <NavButton active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} icon="calendar-days" label="Dates" />
+                            <NavButton active={activeTab === 'tasbeeh'} onClick={() => setActiveTab('tasbeeh')} icon="fingerprint" label="Count" />
+                        </nav>
+                    </div>
+
+                    {showSettings && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-0">
+                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={() => setShowSettings(false)}></div>
+                            <div className="settings-card bg-white w-full max-w-sm rounded-[3rem] p-10 relative z-10 shadow-2xl animate-in slide-in-from-bottom-8 duration-300">
+                                <div className="flex justify-between items-start mb-8">
+                                    <div>
+                                        <h3 className="text-2xl font-extrabold text-slate-800 tracking-tight">Set Location</h3>
+                                        <p className="text-[13px] text-slate-400 font-medium mt-1">Select your city for accurate timings.</p>
+                                    </div>
+                                    <button onClick={() => setShowSettings(false)} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 hover:text-slate-600">
+                                        <i data-lucide="x" style={{width: 18}}></i>
+                                    </button>
+                                </div>
+                                
+                                <div className="space-y-7 mb-10">
+                                    <div className="space-y-3">
+                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Region</label>
+                                        <div className="relative">
+                                            <select 
+                                                value={selectedCountry}
+                                                onChange={(e) => {
+                                                    setSelectedCountry(e.target.value);
+                                                    setSelectedCity(CITY_PRESETS[e.target.value][0]);
+                                                }}
+                                                className="w-full appearance-none p-4 pr-12 bg-slate-50 rounded-2xl border border-slate-100 font-semibold text-slate-700 text-[15px] outline-none hover:border-emerald-200 focus:border-emerald-500 transition-all cursor-pointer"
+                                            >
+                                                {Object.keys(CITY_PRESETS).map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                <i data-lucide="chevron-down" style={{width: 20}}></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Available Cities</label>
+                                        <div className="flex flex-wrap gap-2.5">
+                                            {CITY_PRESETS[selectedCountry].map(city => (
+                                                <button 
+                                                    key={city.name}
+                                                    onClick={() => setSelectedCity(city)}
+                                                    className={`px-5 py-2.5 rounded-xl text-[13px] font-semibold border transition-all ${selectedCity.name === city.name ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'}`}
+                                                >
+                                                    {city.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Moon Sighting / Start Date</label>
+                                        <div className="grid grid-cols-3 gap-2.5">
+                                            {[
+                                                { label: "Feb 18", val: 0 },
+                                                { label: "Feb 19", val: 1 },
+                                                { label: "Feb 20", val: 2 }
+                                            ].map(opt => (
+                                                <button 
+                                                    key={opt.val}
+                                                    onClick={() => setDateOffset(opt.val)} 
+                                                    className={`py-3.5 rounded-xl border text-[12px] font-bold transition-all ${dateOffset === opt.val ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200' : 'bg-white text-slate-500 border-slate-200'}`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowSettings(false)} className="w-full py-5 bg-emerald-600 text-white rounded-[1.75rem] font-bold text-sm uppercase tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-700 active:scale-95 transition-all">
+                                    Update My Calendar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
